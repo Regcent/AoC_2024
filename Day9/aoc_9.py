@@ -104,39 +104,45 @@ def part_1(first: Block, last: Block):
     print(f"Part 1: {calculate_checksum(first)}")
 
 def part_2(first: Block, last: Block):
-    curr = first
-    end = last
-    while curr != end :
-        debug_print(first)
-        if curr.id != -1:
-            curr = curr.next
+    curr = last
+    begin = first
+    max_id = last.id
+    already_moved = set()
+    while curr != first:
+        if curr.id == -1 or curr.id in already_moved:
+            curr = curr.prev
             continue
-        end = last
-        while curr != end:
-            debug_print(first)
-            print("curr", curr.id, curr.length)
-            print("end", end.id, end.length)
-            if end.id == -1:
-                end = end.prev
+        begin = first
+        while curr != first:
+            if curr == begin:
+                curr = curr.prev
+                break
+            if begin.id != -1:
+                if begin.next:
+                    begin = begin.next
+                    continue
+                else:
+                    already_moved.add(curr.id)
+                    break
+            if curr.length > begin.length:
+                begin = begin.next
                 continue
-            if end.length > curr.length:
-                end = end.prev
-                continue
-            elif end.length == curr.length:
-                curr.id = end.id
-                free(end)
-                end = last
+            elif begin.length == curr.length:
+                begin.id = curr.id
+                already_moved.add(curr.id)
+                free(curr)
+                curr = curr.prev
                 break
             else:
-                curr.id = end.id
-                insert = Block(-1, curr.length - end.length, curr)
-                insert.next = curr.next
-                curr.length = end.length
-                curr.next = insert
-                free(end)
-                end = last
-                curr = insert
-    debug_print(first)
+                begin.id = curr.id
+                already_moved.add(curr.id)
+                insert = Block(-1, begin.length - curr.length, begin)
+                begin.next.prev = insert
+                insert.next = begin.next
+                begin.next = insert
+                begin.length = curr.length
+                free(curr)
+                break
     print(f"Part 2: {calculate_checksum(first)}")
 
 def calculate_checksum(first: Block):
@@ -175,4 +181,4 @@ def free(block: Block):
         block.prev.next = None
 
 if __name__ == "__main__":
-    print(run_script("example.txt"))
+    print(run_script("input.txt"))
