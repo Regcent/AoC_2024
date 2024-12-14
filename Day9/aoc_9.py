@@ -36,8 +36,8 @@ def your_script(raw_data: str) -> Union[int, str, float, bool]:
     """
     first, last = parse_data(raw_data)
     part_1(first, last)
-    #memory = parse_data(raw_data)
-    #part_2(memory)
+    first, last = parse_data(raw_data)
+    part_2(first, last)
 
 def parse_data(raw_data: str) -> list:
     first = Block(0, int(raw_data[0]), None)
@@ -63,14 +63,14 @@ def parse_data(raw_data: str) -> list:
         last.next = None
     return first, last
 
-def debug_print(first):
+def debug_print(first: Block):
     curr = first
     while curr:
         print(str(curr), end="")
         curr = curr.next
     print()
 
-def part_1(first, last):
+def part_1(first: Block, last: Block):
     curr = first
     end = last
     while curr != end:
@@ -103,19 +103,19 @@ def part_1(first, last):
                 curr = insert
     print(f"Part 1: {calculate_checksum(first)}")
 
-def part_2(memory: list):
-    curr = memory[0]
-    end = memory[-1]
-    max_id = max(memory[-1].id, memory[-2].id)
-    seen_blocks = set()
-    while len(seen_blocks) != max_id + 1 :
-        print(seen_blocks)
+def part_2(first: Block, last: Block):
+    curr = first
+    end = last
+    while curr != end :
+        debug_print(first)
         if curr.id != -1:
-            seen_blocks.add(curr.id)
             curr = curr.next
             continue
-        end = memory[-1]
+        end = last
         while curr != end:
+            debug_print(first)
+            print("curr", curr.id, curr.length)
+            print("end", end.id, end.length)
             if end.id == -1:
                 end = end.prev
                 continue
@@ -125,23 +125,21 @@ def part_2(memory: list):
             elif end.length == curr.length:
                 curr.id = end.id
                 free(end)
+                end = last
                 break
             else:
-                seen_blocks.add(end.id)
                 curr.id = end.id
                 insert = Block(-1, curr.length - end.length, curr)
                 insert.next = curr.next
                 curr.length = end.length
                 curr.next = insert
                 free(end)
-                end = end.prev
-                if curr == end:
-                    break
+                end = last
                 curr = insert
-    debug_print(memory)
-    print(f"Part 2: {calculate_checksum(memory)}")
+    debug_print(first)
+    print(f"Part 2: {calculate_checksum(first)}")
 
-def calculate_checksum(first):
+def calculate_checksum(first: Block):
     curr = first
     checksum = 0
     curr_idx = 0
@@ -177,4 +175,4 @@ def free(block: Block):
         block.prev.next = None
 
 if __name__ == "__main__":
-    print(run_script("input.txt"))
+    print(run_script("example.txt"))
