@@ -5,12 +5,17 @@ from copy import deepcopy
 ### Use Linked List and create nodes with ids / length and id = - 1 for freespace
 class Block:
     
-    def __init__(self, id, length):
+    def __init__(self, id, length, prev):
         self.id = id
         self.length = length
         self.prev = prev
-        self.next = next
+        self.next = None
 
+    def __str__(self):
+        if self.id == -1:
+            return "." * self.length
+        else:
+            return f"{self.id}" * self.length
 
 def run_script(filepath: str) -> Union[int, str, float, bool]:
     with open(filepath, "r") as f:
@@ -19,7 +24,6 @@ def run_script(filepath: str) -> Union[int, str, float, bool]:
 
 def main_function(raw_data: str) -> Union[int, str, float, bool]:
     start_time = time.time()
-    q
     result = your_script(raw_data)
 
     elapsed_time = time.time() - start_time
@@ -30,89 +34,144 @@ def your_script(raw_data: str) -> Union[int, str, float, bool]:
     """
     Time to code! Write your code here to solve today's problem
     """
-    files = list()
-    freespace = list()
+    memory = parse_data(raw_data)
+    part_1(memory)
+    memory = parse_data(raw_data)
+    part_2(memory)
+
+def parse_data(raw_data: str) -> list:
+    memory = list()
     curr_id = 0
     free = False
+    prev = None
     for char in raw_data:
         if not free:
-            files.append((curr_id, int(char)))
+            new = Block(curr_id, int(char), prev)
+            if prev:
+                prev.next = new
+            memory.append(new)
             curr_id += 1
             free = True
         else:
-            freespace.append(int(char))
+            new = Block(-1, int(char), prev)
+            if prev:
+                prev.next = new
+            memory.append(new)
             free = False
-    part_1(deepcopy(files), deepcopy(freespace))
-    return 0
+        prev = new
+    return memory
 
-def part_1(files: list, freespace: list):
-    checksum = 0
-    curr_idx = 0
-    final = ""
-    while files:
-        (id, length) = files.pop(0)
-        for i in range(length):
-            checksum += curr_idx * id
-            curr_idx += 1
-            final += str(id)
-        available = freespace.pop(0)
-        stop = False
-        while not stop and files:
-            (id, length)= files[-1]
-            if length > available:
-                diff = available
-                files[-1] = (id, length - available)
-                stop = True
-            else:
-                diff = length
-                files.pop()
-                available -= length
-            for i in range(diff):
-                checksum += curr_idx * id
-                curr_idx += 1
-                final += str(id)
-    print(f"Part 1: {checksum}")
+def debug_print(memory: list):
+    curr = memory[0]
+    while curr:
+        print(str(curr), end="")
+        curr = curr.next
 
-def part_2(files: list, freespace: list):
-    checksum = 0
-    curr_idx = 0
-    final = ""
-    already_placed = set()
-    last_id = -1
-    while files:
-        if last_id + 1 not in already_placed:
-            (id, length) = files.pop(0)
-            for i in range(length):
-                checksum += curr_idx * id
-                curr_idx += 1
-                final += str(id)
-                already_placed.add(id)
-        last_id += 1
-        available = freespace.pop(0)
-        j = 1
-        while True:
-            if j >= len(files):
-                final += "." * available
-                break
-            (id, length)= files[-j]
-            if length > available:
-                j += 1
+def part_1(memory: list):
+    curr = memory[0]
+    end = memory[-1]
+    while curr != end:
+        if curr.id != -1:
+            curr = curr.next
+            continue
+        end = memory[-1]
+        while curr != end:
+            if end.id == -1:
+                end = end.prev
                 continue
-            files.pop(-j)
-            available -= length
-            for k in range(length):
-                print(f"Moving {id}")
-                checksum += curr_idx * id
-                curr_idx += 1
-                final += str(id)
-                j = 1
-                already_placed.add(id)
-                print("Reset")
-            if available == 0:
-                print("No more space")
+            if end.length > curr.length:
+                curr.id = end.id
+                end.length -= curr.length
                 break
-    print(final)
-    print(f"Part 2: {checksum}")
+            elif end.length == curr.length:
+                curr.id = end.id
+                free(end)
+                break
+            else:
+                curr.id = end.id
+                insert = Block(-1, curr.length - end.length, curr)
+                insert.next = curr.next
+                curr.length = end.length
+                curr.next = insert
+                free(end)
+                end = end.prev
+                if curr == end:
+                    break
+                curr = insert
+    print(f"Part 1: {calculate_checksum(memory)}")
+
+def part_2(memory: list):
+    curr = memory[0]
+    end = memory[-1]
+    max_id = max(memory[-1].id, memory[-2].id)
+    seen_blocks = set()
+    while len(seen_blocks) != max_id + 1 :
+        print(seen_blocks)
+        if curr.id != -1:
+            seen_blocks.add(curr.id)
+            curr = curr.next
+            continue
+        end = memory[-1]
+        while curr != end:
+            if end.id == -1:
+                end = end.prev
+                continue
+            if end.length > curr.length:
+                end = end.prev
+                continue
+            elif end.length == curr.length:
+                curr.id = end.id
+                free(end)
+                break
+            else:
+                seen_blocks.add(end.id)
+                curr.id = end.id
+                insert = Block(-1, curr.length - end.length, curr)
+                insert.next = curr.next
+                curr.length = end.length
+                curr.next = insert
+                free(end)
+                end = end.prev
+                if curr == end:
+                    break
+                curr = insert
+    debug_print(memory)
+    print(f"Part 2: {calculate_checksum(memory)}")
+
+def calculate_checksum(memory: list):
+    curr = memory[0]
+    checksum = 0
+    curr_idx = 0
+    while curr:
+        if curr.id == -1:
+            curr_idx += curr.length
+        else:
+            for i in range(curr.length):
+                checksum += curr_idx * curr.id
+                curr_idx += 1
+        curr = curr.next
+    return checksum
+
+def free(block: Block):
+    block.id = -1
+    curr = block.next
+    while curr:
+        if curr.id != -1:
+            curr.prev = block
+            block.next = curr
+            break
+        block.length += curr.length
+        curr = curr.next
+    curr = block.prev
+    while curr:
+        if curr.id != -1:
+            block.prev = curr
+            curr.next = block
+            break
+        block.length += curr.length
+        curr = curr.prev
+    if not block.next:
+        block.prev.next = None
 
 if __name__ == "__main__":
     print(run_script("example.txt"))
