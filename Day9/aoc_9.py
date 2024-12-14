@@ -34,47 +34,50 @@ def your_script(raw_data: str) -> Union[int, str, float, bool]:
     """
     Time to code! Write your code here to solve today's problem
     """
-    memory = parse_data(raw_data)
-    part_1(memory)
-    memory = parse_data(raw_data)
-    part_2(memory)
+    first, last = parse_data(raw_data)
+    part_1(first, last)
+    #memory = parse_data(raw_data)
+    #part_2(memory)
 
 def parse_data(raw_data: str) -> list:
-    memory = list()
-    curr_id = 0
-    free = False
-    prev = None
-    for char in raw_data:
+    first = Block(0, int(raw_data[0]), None)
+    curr_id = 1
+    free = True
+    prev = first
+    for char in raw_data[1:]:
         if not free:
             new = Block(curr_id, int(char), prev)
             if prev:
                 prev.next = new
-            memory.append(new)
             curr_id += 1
             free = True
         else:
             new = Block(-1, int(char), prev)
             if prev:
                 prev.next = new
-            memory.append(new)
             free = False
         prev = new
-    return memory
+    last = new
+    if last.id == -1:
+        last = last.prev
+        last.next = None
+    return first, last
 
-def debug_print(memory: list):
-    curr = memory[0]
+def debug_print(first):
+    curr = first
     while curr:
         print(str(curr), end="")
         curr = curr.next
+    print()
 
-def part_1(memory: list):
-    curr = memory[0]
-    end = memory[-1]
+def part_1(first, last):
+    curr = first
+    end = last
     while curr != end:
         if curr.id != -1:
             curr = curr.next
             continue
-        end = memory[-1]
+        end = last
         while curr != end:
             if end.id == -1:
                 end = end.prev
@@ -98,7 +101,7 @@ def part_1(memory: list):
                 if curr == end:
                     break
                 curr = insert
-    print(f"Part 1: {calculate_checksum(memory)}")
+    print(f"Part 1: {calculate_checksum(first)}")
 
 def part_2(memory: list):
     curr = memory[0]
@@ -138,8 +141,8 @@ def part_2(memory: list):
     debug_print(memory)
     print(f"Part 2: {calculate_checksum(memory)}")
 
-def calculate_checksum(memory: list):
-    curr = memory[0]
+def calculate_checksum(first):
+    curr = first
     checksum = 0
     curr_idx = 0
     while curr:
@@ -174,4 +177,4 @@ def free(block: Block):
         block.prev.next = None
 
 if __name__ == "__main__":
-    print(run_script("example.txt"))
+    print(run_script("input.txt"))
